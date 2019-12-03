@@ -30,15 +30,28 @@ class ReactionTime:
         """
 
         # read the config file
+        print(
+            "Please provide the file path to your configuration file"
+            " (blank for default: ./config.cfg):\n"
+        )
+        user_config_path = input()
+        if user_config_path != "":
+            config_path = user_config_path
+
         config = configparser.ConfigParser()
-        assert os.path.isfile(config_path), "No configuration file found."
+        assert os.path.isfile(config_path), f"Config file not found at {config_path}"
+        print("Loading configuration.")
         config.read(config_path)
 
+        print("Initializing ReactionTime.")
         KEY_MAPPING = config.items("KEY_MAPPING")
         KEY_SCORES = config.items("KEY_SCORES")
 
         key_mapping_list, mapped_keys = zip(*KEY_MAPPING)
         self.key_list, key_scores = zip(*KEY_SCORES)
+
+        self.plot_mode = config["MODE"]["PLOT_MODE"]
+        self.log_name = config["MODE"]["LOG_NAME"]
 
         assert (
             key_mapping_list == self.key_list
@@ -69,7 +82,7 @@ class ReactionTime:
         None
 
         """
-
+        print("Running Reaction Time.\n\n")
         history = list()
         count_history = Counter()
         previous_key = None
@@ -263,8 +276,7 @@ class ReactionTime:
 
         return correct_flag
 
-    @staticmethod
-    def _create_save_metrics_df(history):
+    def _create_save_metrics_df(self, history):
         data_columns = [
             "previous_key",
             "key",
@@ -276,5 +288,5 @@ class ReactionTime:
 
         metrics_df = pd.DataFrame(history, columns=data_columns)
         os.makedirs("logs", exist_ok=True)
-        metrics_df.to_csv("logs/summary_results.csv", index=False)
+        metrics_df.to_csv(f"logs/{self.log_name}.csv", index=False)
         return metrics_df
