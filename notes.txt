@@ -1,0 +1,9 @@
+# TODO: Set a max iteration count, use a timer or exit intelligently (30 samples of all KEY_MAPPING?)
+# TODO: To make it more realistic, model key distributions with constraints
+# TODO: Make the UI more friendly
+# TODO: Do something with transitions
+# TODO: Increase the difficulty
+# TODO: Multi-tasking
+# TODO: Find a way to incorporate both hands (i.e., circle highlighting)
+# TODO: Intelligently store the results (write to csv or save to local sqlite3 db)
+# TODO: Create more relevant plots other than just a boxplot
