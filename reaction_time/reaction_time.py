@@ -12,7 +12,6 @@ import seaborn as sns
 
 # non-standard library
 import readchar
-from scipy.special import softmax
 
 # local imports
 from reaction_time.utils import calculate_time_delta_ms, avg_time_scores_by
@@ -20,6 +19,14 @@ from reaction_time.utils import calculate_time_delta_ms, avg_time_scores_by
 
 class ReactionTime:
     def __init__(self, config_path="config.cfg"):
+        """ Initialize the ReactionTime Object
+
+        Parameters
+        ----------
+        config_path : str
+            Path to the configuration file
+
+        """
 
         # read the config file
         config = configparser.ConfigParser()
@@ -42,6 +49,20 @@ class ReactionTime:
         self.key_dict = {key: button for key, button in KEY_MAPPING}
 
     def run(self):
+        """ Run the main reaction time loop
+
+        Algorithm
+        -----
+        - Randomly selects a key
+        - Prints it to the screen and waits for user input
+        - Reads the user input, measures time taken and checks correctness
+        - Waits until next iteration
+
+        Returns
+        -------
+        None
+
+        """
 
         history = list()
         previous_key = None
@@ -55,61 +76,75 @@ class ReactionTime:
 
         while True:
 
-            random_key = np.random.choice(self.key_list, p=self.key_probabilities)
-            print(random_key)
+            selected_key = np.random.choice(self.key_list, p=self.key_probabilities)
+            print(selected_key)
 
-            # input mechanism via readchar
-            user_press = b""
-            start_dt = datetime.datetime.now()
-            for _ in range(self.sequence_length):
-                user_press += readchar.readchar()
-            stop_dt = datetime.datetime.now()
+            time_taken, user_key = self._read_user_input()
+            correct_flag = self._validate_user_key(selected_key, time_taken, user_key)
 
-            # convert byte string to utf-8 encoded string
-            user_press = str(user_press, encoding="utf-8")
-
-            # find time taken, score and print out some metrics
-            time_taken = calculate_time_delta_ms(start_dt, stop_dt)
-            if user_press == self.key_dict[random_key]:
-                # user pressed the right key
-                print(f"Correct ({time_taken:0.2f}ms)\n")
-                correct_flag = 1
-            elif user_press == "x":
-                # exits without recording any event
+            if correct_flag == -1:
                 break
-            else:
-                # user pressed the wrong key
-                print(f"Wrong ({time_taken:0.2f}ms)\n")
-                correct_flag = 0
 
-            # exclude first iteration (prevents skewing distribution due to warmup)
+            # exclude first iteration (prevents skewing distribution)
+            # previous key ~ prior iteration random key
             if n_iter != 0:
-                # (random key refers to current iteration random key)
-                # (previous_key refers to prior iteration random key)
                 result = (
                     previous_key,
-                    random_key,
-                    user_press,
+                    selected_key,
+                    user_key,
                     time_taken,
                     correct_flag,
                 )
                 history.append(result)
 
             # update values for subsequent iterations
-            previous_key = random_key
+            previous_key = selected_key
             n_iter += 1
             speed = self.speed()
 
             speed = max(self.min_speed, speed)
             time.sleep(speed)
 
-        self.print_results(history)
+        self._print_results(history)
+
+    def _validate_user_key(self, random_key, time_taken, user_key):
+
+        # user pressed the right key
+        if user_key == self.key_dict[random_key]:
+            print(f"Correct ({time_taken:0.2f}ms)\n")
+            correct_flag = 1
+
+        # user breaks the execution
+        elif user_key == "x":
+            correct_flag = -1
+
+        # user pressed the wrong key
+        else:
+            print(f"Wrong ({time_taken:0.2f}ms)\n")
+            correct_flag = 0
+
+        return correct_flag
+
+    def _read_user_input(self):
+
+        # input mechanism via readchar
+        user_press = b""
+        start_dt = datetime.datetime.now()
+        for _ in range(self.sequence_length):
+            user_press += readchar.readchar()
+        stop_dt = datetime.datetime.now()
+
+        # convert byte string to utf-8 encoded string
+        user_press = str(user_press, encoding="utf-8")
+        time_taken = calculate_time_delta_ms(start_dt, stop_dt)
+
+        return time_taken, user_press
 
     @staticmethod
-    def print_results(history):
+    def _print_results(history):
 
         metrics_df = pd.DataFrame(
-            history, columns=["previous_key", "key", "user_press", "time_ms", "correct"]
+            history, columns=["previous_key", "key", "user_key", "time_ms", "correct"]
         )
 
         # print out some summary statistics
@@ -149,9 +184,9 @@ class ReactionTime:
             index="previous_key",
             columns="key",
             values="time_ms",
-            aggfunc='count'
+            aggfunc="count",
         )
 
-        sns.heatmap(data=transition_matrix, annot=transition_count, cmap='coolwarm')
+        sns.heatmap(data=transition_matrix, annot=transition_count, cmap="coolwarm")
         plt.title("Transition Matrix (Color - Mean Time Taken (ms), Annotation - Count")
         plt.show()
