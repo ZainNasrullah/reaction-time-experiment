@@ -153,4 +153,5 @@ class ReactionTime:
         )
 
         sns.heatmap(data=transition_matrix, annot=transition_count, cmap='coolwarm')
+        plt.title("Transition Matrix (Color - Mean Time Taken (ms), Annotation - Count")
         plt.show()
