@@ -1,6 +1,5 @@
 import datetime
 import pandas as pd
-import os
 
 
 def calculate_time_delta_ms(start_dt, end_dt):
@@ -56,14 +55,3 @@ def avg_time_scores_by(df, by, metrics=None, sort_by="time_ms"):
         .reset_index()
     )
 
-
-def check_config_exists():
-
-    if os.path.isfile('config.cfg'):
-        config_path = 'config.cfg'
-    elif os.path.isfile('../config.cfg'):
-        config_path = '../config.cfg'
-    else:
-        config_path = None
-
-    return config_path

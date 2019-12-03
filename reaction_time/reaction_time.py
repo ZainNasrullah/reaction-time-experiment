@@ -1,4 +1,5 @@
 # built-in
+import os
 import random
 import datetime
 import time
@@ -16,17 +17,15 @@ import readchar
 from reaction_time.utils import (
     calculate_time_delta_ms,
     avg_time_scores_by,
-    check_config_exists,
 )
 
 
 class ReactionTime:
-    def __init__(self):
+    def __init__(self, config_path='config.cfg'):
 
         # read the config file
         config = configparser.ConfigParser()
-        config_path = check_config_exists()
-        assert config_path is not None, "No configuration file found."
+        assert os.path.isfile(config_path), "No configuration file found."
         config.read(config_path)
 
         KEY_MAPPING = config.items("KEY_MAPPING")
