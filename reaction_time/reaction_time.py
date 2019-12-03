@@ -6,6 +6,7 @@ import time
 import configparser
 
 # analysis
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -14,14 +15,11 @@ import seaborn as sns
 import readchar
 
 # local imports
-from reaction_time.utils import (
-    calculate_time_delta_ms,
-    avg_time_scores_by,
-)
+from reaction_time.utils import calculate_time_delta_ms, avg_time_scores_by
 
 
 class ReactionTime:
-    def __init__(self, config_path='config.cfg'):
+    def __init__(self, config_path="config.cfg"):
 
         # read the config file
         config = configparser.ConfigParser()
@@ -29,8 +27,19 @@ class ReactionTime:
         config.read(config_path)
 
         KEY_MAPPING = config.items("KEY_MAPPING")
-        self.speed = float(config["GENERAL"]["SECONDS_BETWEEN_ITERS"])
-        self.sequence_length = int(config["GENERAL"]["INPUT_SEQUENCE_LENGTH"])
+
+        _speed = float(config["GENERAL"]["SPEED"])
+        _deviation = float(config["GENERAL"]["SPEED_STANDARD_DEVIATION"])
+
+        assert ( _speed - _deviation >= 0
+                 ), "Speed - deviation cannot be less than 0. Check configuration."
+
+        if _deviation > 0:
+            self.speed = lambda: np.random.normal(_speed, _deviation)
+        else:
+            self.speed = lambda: _speed
+
+        self.sequence_length = int(config["GENERAL"]["SEQUENCE_LENGTH"])
 
         # configuring key dict
         self.key_dict = {key: button for key, button in KEY_MAPPING}
@@ -93,7 +102,7 @@ class ReactionTime:
             # update values for subsequent iterations
             previous_key = random_key
             n_iter += 1
-            time.sleep(self.speed)
+            time.sleep(self.speed())
 
         self.print_results(history)
 
