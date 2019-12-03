@@ -1,6 +1,5 @@
 # built-in
 import os
-import random
 import datetime
 import time
 import configparser
@@ -13,6 +12,7 @@ import seaborn as sns
 
 # non-standard library
 import readchar
+from scipy.special import softmax
 
 # local imports
 from reaction_time.utils import calculate_time_delta_ms, avg_time_scores_by
@@ -27,23 +27,19 @@ class ReactionTime:
         config.read(config_path)
 
         KEY_MAPPING = config.items("KEY_MAPPING")
+        KEY_SCORES = config.items("KEY_SCORES")
 
-        _speed = float(config["GENERAL"]["SPEED"])
-        _deviation = float(config["GENERAL"]["SPEED_STANDARD_DEVIATION"])
+        self.key_list, key_scores = zip(*KEY_SCORES)
+        key_scores = np.array([int(score) for score in key_scores])
+        self.key_probabilities = key_scores / key_scores.sum()
+        self.min_speed = float(config["GENERAL"]["MIN_SPEED"])
 
-        assert ( _speed - _deviation >= 0
-                 ), "Speed - deviation cannot be less than 0. Check configuration."
-
-        if _deviation > 0:
-            self.speed = lambda: np.random.normal(_speed, _deviation)
-        else:
-            self.speed = lambda: _speed
+        low_speed = float(config["GENERAL"]["LOW_SPEED"])
+        high_speed = float(config["GENERAL"]["HIGH_SPEED"])
+        self.speed = lambda: np.random.uniform(low_speed, high_speed)
 
         self.sequence_length = int(config["GENERAL"]["SEQUENCE_LENGTH"])
-
-        # configuring key dict
         self.key_dict = {key: button for key, button in KEY_MAPPING}
-        self.key_list = list(self.key_dict.keys())
 
     def run(self):
 
@@ -59,7 +55,7 @@ class ReactionTime:
 
         while True:
 
-            random_key = random.choice(self.key_list)
+            random_key = np.random.choice(self.key_list, p=self.key_probabilities)
             print(random_key)
 
             # input mechanism via readchar
@@ -102,7 +98,10 @@ class ReactionTime:
             # update values for subsequent iterations
             previous_key = random_key
             n_iter += 1
-            time.sleep(self.speed())
+            speed = self.speed()
+
+            speed = max(self.min_speed, speed)
+            time.sleep(speed)
 
         self.print_results(history)
 
@@ -137,4 +136,21 @@ class ReactionTime:
         ax[1].tick_params(axis="both", which="both", labelsize=7)
 
         plt.tight_layout()
+        plt.show()
+
+        transition_matrix = pd.pivot_table(
+            data=transition_performance,
+            index="previous_key",
+            columns="key",
+            values="time_ms",
+        )
+        transition_count = pd.pivot_table(
+            data=metrics_df,
+            index="previous_key",
+            columns="key",
+            values="time_ms",
+            aggfunc='count'
+        )
+
+        sns.heatmap(data=transition_matrix, annot=transition_count, cmap='coolwarm')
         plt.show()
