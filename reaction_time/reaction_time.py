@@ -1,5 +1,6 @@
 # built-in
 import os
+import platform
 import datetime
 import time
 import configparser
@@ -66,6 +67,8 @@ class ReactionTime:
 
         self.sequence_length = int(config["GENERAL"]["SEQUENCE_LENGTH"])
         self.key_dict = {key: button for key, button in KEY_MAPPING}
+
+        self.platform = platform.system()
 
     def run(self):
         """ Run the main reaction time loop
@@ -246,14 +249,15 @@ class ReactionTime:
     def _read_user_input(self):
 
         # input mechanism via readchar
-        user_press = b""
+        user_press = b"" if self.platform == 'Windows' else ""
         start_dt = datetime.datetime.now()
         for _ in range(self.sequence_length):
             user_press += readchar.readchar()
         stop_dt = datetime.datetime.now()
 
         # convert byte string to utf-8 encoded string
-        user_press = str(user_press, encoding="utf-8")
+        if self.platform == 'Windows':
+            user_press = str(user_press, encoding="utf-8")
         time_taken = calculate_time_delta_ms(start_dt, stop_dt)
 
         return time_taken, user_press
