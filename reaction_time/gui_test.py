@@ -5,6 +5,8 @@ import numpy as np
 
 class GameConfig:
     def __init__(self):
+
+        # general config
         pygame.init()
         self.display_width = 800
         self.display_height = 600
@@ -12,16 +14,52 @@ class GameConfig:
         self.font_size = 30
         self.background_color = (255, 255, 255)
 
+        # setup display and font
         self.display = pygame.display.set_mode(
             (self.display_width, self.display_height)
         )
+        pygame.display.set_caption("Reaction Time Test")
         self.font = pygame.font.SysFont("Comic Sans MS", self.font_size)
 
-        pygame.display.set_caption("Reaction Time Test")
+        # set starting values
+        self.start_time = None
+        self.run = True
+        self.score = 0
         self.clock = pygame.time.Clock()
 
-    def fill_background(self, color=(255, 255, 255)):
+    def fill_background(self, color=None):
+        if color is None:
+            color = self.background_color
         self.display.fill(color)
+
+    def event_handler(self, circle, selected_key):
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.run = False
+                return circle, None, None, None
+
+            if event.type == pygame.KEYDOWN:
+                if self.start_time:
+                    time_elapsed = pygame.time.get_ticks() - self.start_time
+                    print(time_elapsed)
+                else:
+                    time_elapsed = None
+
+                mouse_position = pygame.mouse.get_pos()
+                if circle.check_hitbox(mouse_position) and event.unicode == selected_key:
+                    self.score += 1
+                    correct_flag = 1
+                else:
+                    self.score -= 1
+                    correct_flag = 0
+
+                circle = Circle(game.display, radius=20, font=game.font)
+                print(self.score)
+                self.start_time = pygame.time.get_ticks()
+                return circle, time_elapsed, event.unicode, correct_flag
+
+        return circle, None, None, None
 
     def quit(self):
         pygame.quit()
@@ -57,29 +95,13 @@ class Circle:
 game = GameConfig()
 circle = Circle(game.display, radius=20, font=game.font)
 
-start_time = None
 score = 0
 
-run = True
-while run:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            run = False
-            break
-        if event.type == pygame.KEYDOWN:
-            if start_time:
-                time_elapsed = pygame.time.get_ticks() - start_time
-                print(time_elapsed)
+while game.run:
 
-            mouse_position = pygame.mouse.get_pos()
-            if circle.check_hitbox(mouse_position) and event.unicode == "q":
-                score += 1
-            else:
-                score -= 1
-
-            circle = Circle(game.display, radius=20, font=game.font)
-            print(score)
-            start_time = pygame.time.get_ticks()
+    circle, time_taken, user_key, correct_flag = game.event_handler(circle, selected_key='q')
+    if time_taken is not None:
+        print("New random ability")
 
     game.fill_background()
     circle.render_self_with_text("Q")
