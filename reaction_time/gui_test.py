@@ -17,6 +17,7 @@ white = (255, 255, 255)
 orange = (255, 127, 0)
 font = pygame.font.SysFont("Comic Sans MS", font_size)
 
+
 class Circle:
     def __init__(self, surface, radius):
         self.surface = surface
@@ -46,18 +47,19 @@ run = True
 circle = Circle(gameDisplay, radius=20)
 start_time = None
 score = 0
-while run:
 
+while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
+            break
         if event.type == pygame.KEYDOWN:
             if start_time:
                 time_elapsed = start_time - pygame.time.get_ticks()
                 print(time_elapsed)
 
             mouse_position = pygame.mouse.get_pos()
-            if circle.check_hitbox(mouse_position) and event.key==pygame.K_q:
+            if circle.check_hitbox(mouse_position) and event.unicode == 'q':
                 score +=1
             else:
                 score -=1
