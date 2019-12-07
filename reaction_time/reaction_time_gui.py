@@ -14,14 +14,17 @@ import seaborn as sns
 
 # non-standard library
 import readchar
+import pygame
+import pygame.gfxdraw
 
 # local imports
 from reaction_time.utils import calculate_time_delta_ms, avg_time_scores_by
+from reaction_time.gui_classes import GameConfig, Circle
 
 
-class ReactionTime:
+class ReactionTimeGUI:
     def __init__(self, config_path="config.cfg"):
-        """ Initialize the ReactionTime Object
+        """ Initialize the ReactionTimeGUI Object
 
         Parameters
         ----------
@@ -85,11 +88,11 @@ class ReactionTime:
         None
 
         """
+
         print("Running Reaction Time.\n\n")
         history = list()
         count_history = Counter()
         previous_key = None
-        n_iter = 0
 
         print(f"Click one of the following: {self.key_dict.keys()}\n")
         print(
@@ -97,13 +100,17 @@ class ReactionTime:
             "Exit by typing 'x' at any prompt."
         )
 
-        while True:
+        game = GameConfig()
+        circle = Circle(game.display, radius=20, font=game.font)
+        selected_key = np.random.choice(self.key_list, p=self.key_probabilities)
 
-            selected_key = np.random.choice(self.key_list, p=self.key_probabilities)
-            print(selected_key)
+        while game.run:
 
-            time_taken, user_key = self._read_user_input()
-            correct_flag = self._validate_user_key(selected_key, time_taken, user_key)
+            circle, time_taken, user_key, correct_flag = game.event_handler(
+                circle, selected_key=self.key_dict[selected_key]
+            )
+            if time_taken is not None:
+                selected_key = np.random.choice(self.key_list, p=self.key_probabilities)
 
             if correct_flag == -1:
                 break
@@ -115,7 +122,7 @@ class ReactionTime:
 
             # exclude first iteration (prevents skewing distribution)
             # previous key ~ prior iteration random key
-            if n_iter != 0:
+            if game.n_iter != 0:
                 result = (
                     previous_key,
                     selected_key,
@@ -127,10 +134,17 @@ class ReactionTime:
                 history.append(result)
 
             # update values for subsequent iterations
-            previous_key = selected_key
-            n_iter += 1
-            time.sleep(self.speed())
+            if time_taken is not None:
+                previous_key = selected_key
+                game.n_iter += 1
 
+            game.fill_background()
+            circle.render_self_with_text(self.key_dict[selected_key])
+            game.print_score()
+            pygame.display.update()
+            game.clock.tick(60)
+
+        game.quit()
         metrics_df = self._create_save_metrics_df(history)
         self.print_results(metrics_df)
 
@@ -214,10 +228,11 @@ class ReactionTime:
         plt.show()
 
         transition_matrix = pd.pivot_table(
-            data=transition_performance,
+            data=metrics_df,
             index="previous_key",
             columns="key",
             values="time_ms",
+            aggfunc="mean"
         )
         transition_count = pd.pivot_table(
             data=metrics_df,
@@ -226,7 +241,6 @@ class ReactionTime:
             values="time_ms",
             aggfunc="count",
         )
-
         sns.heatmap(data=transition_matrix, annot=transition_count, cmap="coolwarm")
         plt.title("Transition Matrix (Color - Avg Time Taken (ms), Annotation - Count)")
         plt.show()
@@ -245,40 +259,6 @@ class ReactionTime:
                 count_history[key] = 0
 
         return iters_last_selected
-
-    def _read_user_input(self):
-
-        # input mechanism via readchar
-        user_press = b"" if self.platform == 'Windows' else ""
-        start_dt = datetime.datetime.now()
-        for _ in range(self.sequence_length):
-            user_press += readchar.readchar()
-        stop_dt = datetime.datetime.now()
-
-        # convert byte string to utf-8 encoded string
-        if self.platform == 'Windows':
-            user_press = str(user_press, encoding="utf-8")
-        time_taken = calculate_time_delta_ms(start_dt, stop_dt)
-
-        return time_taken, user_press
-
-    def _validate_user_key(self, random_key, time_taken, user_key):
-
-        # user pressed the right key
-        if user_key == self.key_dict[random_key]:
-            print(f"Correct ({time_taken:0.2f}ms)\n")
-            correct_flag = 1
-
-        # user breaks the execution
-        elif user_key == "x":
-            correct_flag = -1
-
-        # user pressed the wrong key
-        else:
-            print(f"Wrong ({time_taken:0.2f}ms)\n")
-            correct_flag = 0
-
-        return correct_flag
 
     def _create_save_metrics_df(self, history):
         data_columns = [
