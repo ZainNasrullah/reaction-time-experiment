@@ -101,7 +101,7 @@ class ReactionTimeGUI:
         )
 
         game = GameConfig()
-        circle = Circle(game.display, radius=20, font=game.font)
+        circle = Circle(game, radius=20)
         selected_key = np.random.choice(self.key_list, p=self.key_probabilities)
 
         while game.run:
@@ -109,16 +109,17 @@ class ReactionTimeGUI:
             circle, time_taken, user_key, correct_flag = game.event_handler(
                 circle, selected_key=self.key_dict[selected_key]
             )
-            if time_taken is not None:
-                selected_key = np.random.choice(self.key_list, p=self.key_probabilities)
 
             if correct_flag == -1:
                 break
 
-            # track number of iterations since last selected
-            iters_last_selected = self._update_count_history(
-                count_history, selected_key
-            )
+            if time_taken is not None:
+                selected_key = np.random.choice(self.key_list, p=self.key_probabilities)
+
+                # track number of iterations since last selected
+                iters_last_selected = self._update_count_history(
+                    count_history, selected_key
+                )
 
             # exclude first iteration (prevents skewing distribution)
             # previous key ~ prior iteration random key

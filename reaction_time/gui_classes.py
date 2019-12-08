@@ -1,6 +1,7 @@
 import pygame
 import pygame.gfxdraw
 import numpy as np
+from collections import deque
 
 
 class GameConfig:
@@ -15,6 +16,8 @@ class GameConfig:
         self.bar_width = 40
         self.font_color = (255, 255, 255)  # white
         self.background_color = (255, 255, 255)  # white
+        self.track_n_timesteps = 10
+        self.tracked_timesteps = deque(maxlen=self.track_n_timesteps)
 
         # setup display and font
         self.display = pygame.display.set_mode(
@@ -39,7 +42,7 @@ class GameConfig:
         )
 
     def print_score(self):
-        text = f"Score: {self.score}/{self.n_iter + 1}"
+        text = f"Score: {self.score}/{self.n_iter + 1}, Average Time ({self.track_n_timesteps} iters): {np.mean(self.tracked_timesteps):0.0f}ms"
         label = self.font.render(text, 1, self.font_color)
         text_rect = label.get_rect(center=(self.display_width / 2, 20))
         self.display.blit(label, text_rect)
@@ -54,7 +57,7 @@ class GameConfig:
             if event.type == pygame.KEYDOWN:
                 if self.start_time:
                     time_elapsed = pygame.time.get_ticks() - self.start_time
-                    print(time_elapsed)
+                    self.tracked_timesteps.append(time_elapsed)
                 else:
                     time_elapsed = None
 
@@ -69,7 +72,7 @@ class GameConfig:
                     correct_flag = 0
 
                 self.print_score()
-                circle = Circle(self.display, radius=20, font=self.font)
+                circle = Circle(self, radius=20)
                 print(self.score)
                 self.start_time = pygame.time.get_ticks()
                 return circle, time_elapsed, event.unicode, correct_flag
@@ -81,14 +84,15 @@ class GameConfig:
 
 
 class Circle:
-    def __init__(self, surface, radius, font):
-        self.surface = surface
+    def __init__(self, game, radius):
+        self.surface = game.display
+        self.menu_bar = game.bar_width
         self.radius = radius
-        self.font = font
+        self.font = game.font
         self.font_color = (255, 255, 255)  # white
-        self.x = np.random.randint(self.radius, surface.get_width() - self.radius)
+        self.x = np.random.randint(self.radius, self.surface.get_width() - self.radius)
         self.y = np.random.randint(
-            self.radius + 40, surface.get_height() - self.radius
+            self.radius + self.menu_bar, self.surface.get_height() - self.radius
         )
         self.color = (255, 127, 0)  # orange
         self.x_hitbox = (self.x - self.radius, self.x + self.radius)
