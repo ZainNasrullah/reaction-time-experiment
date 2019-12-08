@@ -52,7 +52,7 @@ class GameConfig:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.run = False
-                return circle, None, None, None
+                return None, None, None
 
             if event.type == pygame.KEYDOWN:
                 if self.start_time:
@@ -68,47 +68,54 @@ class GameConfig:
                 ):
                     self.score += 1
                     correct_flag = 1
+                    circle.color = (0, 255, 0)
+
                 else:
                     correct_flag = 0
+                    circle.color = (255, 0, 0)
 
                 self.print_score()
-                circle = Circle(self, radius=20)
-                print(self.score)
+                circle.fade = True
                 self.start_time = pygame.time.get_ticks()
-                return circle, time_elapsed, event.unicode, correct_flag
+                return time_elapsed, event.unicode, correct_flag
 
-        return circle, None, None, None
+        return None, None, None
 
     def quit(self):
         pygame.quit()
 
 
 class Circle:
-    def __init__(self, game, radius):
+    def __init__(self, game, key, radius):
         self.surface = game.display
-        self.menu_bar = game.bar_width
+        self.key = key
         self.radius = radius
         self.font = game.font
         self.font_color = (255, 255, 255)  # white
         self.x = np.random.randint(self.radius, self.surface.get_width() - self.radius)
         self.y = np.random.randint(
-            self.radius + self.menu_bar, self.surface.get_height() - self.radius
+            self.radius + game.bar_width, self.surface.get_height() - self.radius
         )
         self.color = (255, 127, 0)  # orange
         self.x_hitbox = (self.x - self.radius, self.x + self.radius)
         self.y_hitbox = (self.y - self.radius, self.y + self.radius)
+        self.alpha = 255
+        self.fade = False
 
     def render_self_with_text(self, text, color=None):
         if color is None:
             color = self.color
 
+        if self.fade:
+            self.alpha = max(0, self.alpha - 15)  # alpha should never be < 0.
+
         self.circle_shell = pygame.gfxdraw.aacircle(
-            self.surface, self.x, self.y, self.radius, color
+            self.surface, self.x, self.y, self.radius, color + (self.alpha,)
         )
         self.circle_fill = pygame.gfxdraw.filled_circle(
-            self.surface, self.x, self.y, self.radius, color
+            self.surface, self.x, self.y, self.radius, color + (self.alpha,)
         )
-        label = self.font.render(text, 1, self.font_color)
+        label = self.font.render(self.key, 1, self.font_color)
         text_rect = label.get_rect(center=(self.x, self.y))
         self.surface.blit(label, text_rect)
 

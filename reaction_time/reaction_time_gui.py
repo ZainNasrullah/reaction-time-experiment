@@ -101,20 +101,22 @@ class ReactionTimeGUI:
         )
 
         game = GameConfig()
-        circle = Circle(game, radius=20)
         selected_key = np.random.choice(self.key_list, p=self.key_probabilities)
+        circles = [Circle(game, radius=20, key=self.key_dict[selected_key])]
 
         while game.run:
 
-            circle, time_taken, user_key, correct_flag = game.event_handler(
-                circle, selected_key=self.key_dict[selected_key]
+            time_taken, user_key, correct_flag = game.event_handler(
+                circles[-1], selected_key=self.key_dict[selected_key]
             )
 
             if correct_flag == -1:
                 break
 
-            if time_taken is not None:
+            if correct_flag is not None:
                 selected_key = np.random.choice(self.key_list, p=self.key_probabilities)
+                new_circle = Circle(game, radius=20, key=self.key_dict[selected_key])
+                circles.append(new_circle)
 
                 # track number of iterations since last selected
                 iters_last_selected = self._update_count_history(
@@ -140,7 +142,15 @@ class ReactionTimeGUI:
                 game.n_iter += 1
 
             game.fill_background()
-            circle.render_self_with_text(self.key_dict[selected_key])
+
+            i = 0
+            while i < len(circles):
+                circles[i].render_self_with_text(self.key_dict[selected_key])
+                if circles[i].alpha == 0:
+                    circles.pop(i)
+                else:
+                    i += 1
+
             game.print_score()
             pygame.display.update()
             game.clock.tick(60)
