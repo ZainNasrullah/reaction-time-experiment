@@ -110,9 +110,6 @@ class ReactionTimeGUI:
                 circles[-1], selected_key=self.key_dict[selected_key]
             )
 
-            if correct_flag == -1:
-                break
-
             if correct_flag is not None:
                 selected_key = np.random.choice(self.key_list, p=self.key_probabilities)
                 new_circle = Circle(game, radius=20, key=self.key_dict[selected_key])

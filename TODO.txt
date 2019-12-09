@@ -1,8 +1,7 @@
-# TODO: Intelligently store the results (write to csv or save to local sqlite3 db)
-# TODO: Create test scripts
-# TODO: Increase the difficulty / Multi-tasking
-# TODO: Find a way to incorporate both hands (i.e., circle highlighting)
-# TODO: Make the UI more friendly
-# TODO: Create more relevant plots
+# TODO: Increase the difficulty (distractions, multiple circles to press, speed ups?)
+# TODO: Create more relevant plots (accuracy vs reaction time, trace of mouse movement, etc.)
+# TODO: latency (subtract fastest one can smash a button, i.e., calibration)
+# TODO: keyboard mode only
+# TODO: Make the UI more friendly (move config into game?)
 # TODO: Incorporate CICD pipeline via github actions
-# TODO: Set a max iteration count, use a timer or exit intelligently
+# TODO: Create test scripts
